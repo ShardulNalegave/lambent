@@ -11,13 +11,26 @@ typedef enum {
 
     TOKEN_LEFT_PAREN,
     TOKEN_RIGHT_PAREN,
-    TOKEN_LEFT_SQUARE,
-    TOKEN_RIGHT_SQUARE,
 
     TOKEN_DOT,
 
-    TOKEN_CONSTANT,
-    TOKEN_VARIABLE,
+    TOKEN_IDENT,
+    TOKEN_NUMBER,
+
+    TOKEN_PLUS,
+    TOKEN_MINUS,
+    TOKEN_STAR,
+    TOKEN_SLASH,
+    TOKEN_CARET,
+
+    TOKEN_AND,
+    TOKEN_OR,
+    TOKEN_NOT,
+
+    TOKEN_EQUAL,
+    TOKEN_NOT_EQUAL,
+
+    TOKEN_L,
 } token_type_t;
 
 typedef struct {
@@ -36,12 +49,5 @@ typedef struct {
 
 void scanner_init(const char* source);
 token_t scanner_scan_token();
-
-static bool scanner_is_at_end();
-static token_t scanner_make_token(token_type_t type);
-static token_t scanner_make_error_token(const char* msg);
-static char scanner_advance();
-static char scanner_peek();
-static bool scanner_match_next(char c);
 
 #endif
