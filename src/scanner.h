@@ -1,6 +1,6 @@
 
-#ifndef lambent_scanner_h
-#define lambent_scanner_h
+#ifndef LAMBENT_SCANNER_H
+#define LAMBENT_SCANNER_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -50,4 +50,4 @@ typedef struct {
 void scanner_init(const char* source);
 token_t scanner_scan_token();
 
-#endif
+#endif // LAMBENT_SCANNER_H
