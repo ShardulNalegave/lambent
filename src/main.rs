@@ -3,6 +3,7 @@ use parser::visualize_program;
 pub mod token;
 pub mod lexer;
 pub mod parser;
+pub mod runner;
 
 fn main() {
     let code = "result = L a.(a+1) 5";
@@ -12,4 +13,9 @@ fn main() {
     let mut p = parser::Parser::new(tokens);
     let prog = p.parse_program();
     println!("{}", visualize_program(&prog));
+
+    let mut r = runner::Runner::new(prog);
+    r.run();
+
+    println!("{:?}", r.globals);
 }
