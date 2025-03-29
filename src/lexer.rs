@@ -20,7 +20,7 @@ impl Lexer {
                 tokens.push(tok);
                 break;
             }
-            
+
             tokens.push(tok);
         }
         tokens
@@ -31,7 +31,7 @@ impl Lexer {
 
         if let Some(c) = self.peek() {
             if c.is_alphabetic() {
-                return self.read_identifier();
+                return self.read_identifier_or_keyword();
             } else if c.is_digit(10) {
                 return self.read_number();
             }
@@ -48,6 +48,7 @@ impl Lexer {
             Some('*') => TokenKind::Mul,
             Some('/') => TokenKind::Div,
             Some('^') => TokenKind::Expo,
+            Some('=') => TokenKind::Assign,
 
             Some(c) => panic!("Unexpected character: {}", c),
         })
@@ -82,7 +83,7 @@ impl Lexer {
         }
     }
 
-    fn read_identifier(&mut self) -> Token {
+    fn read_identifier_or_keyword(&mut self) -> Token {
         let mut ident = String::new();
         while let Some(c) = self.peek() {
             if c.is_alphanumeric() || c == '_' {
@@ -93,7 +94,10 @@ impl Lexer {
             }
         }
 
-        self.make_token(TokenKind::Identifier(ident))
+        match ident.as_str() {
+            "L" => self.make_token(TokenKind::Lambda),
+            _ => self.make_token(TokenKind::Identifier(ident)),
+        }
     }
 
     fn read_number(&mut self) -> Token {
