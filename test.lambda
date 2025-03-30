@@ -1,2 +1,4 @@
+
+# Simple function that divides two numbers
 div = L a. L b. (a/b);
 result = div 1 2;

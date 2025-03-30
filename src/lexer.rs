@@ -36,6 +36,7 @@ impl Lexer {
     
     pub fn scan_token(&mut self) -> Result<Token, LexerError> {
         self.skip_whitespace();
+        self.skip_comment();
 
         // Early return for identifiers, keywords and numbers
         if let Some(c) = self.peek() {
@@ -89,6 +90,18 @@ impl Lexer {
                     self.line += 1;
                 },
                 _ => break,
+            }
+        }
+    }
+
+    fn skip_comment(&mut self) {
+        if let Some('#') = self.peek() {
+            while let Some(c) = self.peek() {
+                self.advance();
+                if c == '\n' {
+                    self.line += 1;
+                    break;
+                }
             }
         }
     }

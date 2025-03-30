@@ -60,5 +60,8 @@ fn main() {
         },
     }
 
-    println!("{:?}", runner.globals.get("result").unwrap());
+    match runner.globals.get("result") {
+        None => unreachable!(),
+        Some(val) => println!("{:?}", val),
+    }
 }

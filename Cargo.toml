@@ -3,6 +3,11 @@ name = "lambent"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
+anyhow = "1.0.97"
 clap = { version = "4.5.34", features = ["derive"] }
 thiserror = "2.0.12"
+wasm-bindgen = "0.2.100"

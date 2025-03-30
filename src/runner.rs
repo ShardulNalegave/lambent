@@ -16,14 +16,23 @@ pub enum RunnerError {
 
 pub type Env = HashMap<String, Value>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Value {
     Number(f32),
-    Closure {
+    Function {
         param: String,
         body: Box<Expression>,
         env: Env,
     },
+}
+
+impl std::fmt::Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(val) => write!(f, "{}", val),
+            Self::Function { .. } => write!(f, "<Function>"),
+        }
+    }
 }
 
 pub struct Runner {
@@ -77,7 +86,7 @@ impl Runner {
                 }
             },
             Expression::Function { name, body } => {
-                Value::Closure {
+                Value::Function {
                     param: name.clone(),
                     body: body.clone(),
                     env: env.clone(),
@@ -87,7 +96,7 @@ impl Runner {
                 let func = Runner::evaluate_expression(lhs, env)?;
                 let arg = Runner::evaluate_expression(rhs, env)?;
                 match func {
-                    Value::Closure { param, body, env: mut closure_env } => {
+                    Value::Function { param, body, env: mut closure_env } => {
                         closure_env.insert(param, arg);
                         Runner::evaluate_expression(&body, &mut closure_env)?
                     },
