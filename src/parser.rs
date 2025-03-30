@@ -1,11 +1,30 @@
-use crate::token::{Token, TokenKind};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+// ===== Imports =====
+use crate::token::{Token, TokenKind};
+// ===================
+
+#[derive(Error, Debug)]
+pub enum ParserError {
+    #[error("Expected a token {expected:?} but found nothing")]
+    NoTokenFound { expected: String },
+    #[error("Expected token {expected:?} but found {found:?} on line {line}")]
+    UnexpectedToken {
+        expected: String,
+        found: TokenKind,
+        line: usize,
+    },
+    #[error("Unexpected token in prefix position at line {line}: {kind:?}")]
+    UnexpectedPrefix { kind: TokenKind, line: usize },
+    #[error("Expected {expected:?} found EOF")]
+    UnexpectedEOF { expected: String },
+}
+
+#[derive(Clone, Copy, Debug)]
 pub enum UnaryOperator {
     Sub,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOperator {
     Add,
     Sub,
@@ -14,11 +33,11 @@ pub enum BinaryOperator {
     Expo,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Expression {
     Name { value: String },
     Number { value: f32 },
-    Abstraction {
+    Function {
         name: String,
         body: Box<Expression>,
     },
@@ -37,13 +56,13 @@ pub enum Expression {
     },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Statement {
     pub name: String,
     pub value: Expression,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -68,39 +87,61 @@ impl Parser {
         self.tokens.get(self.pos)
     }
 
-    pub fn parse_program(&mut self) -> Program {
+    pub fn parse_program(&mut self) -> Result<Program, ParserError> {
         let mut statements = Vec::new();
         while let Some(token) = self.peek_token() {
             if let TokenKind::EOF { .. } = token.kind {
                 break;
             }
-            statements.push(self.parse_statement());
+            statements.push(self.parse_statement()?);
         }
-        Program { statements }
+        Ok(Program { statements })
     }
 
-    pub fn parse_statement(&mut self) -> Statement {
-        let token = self.advance_token().expect("Expected a token found None");
+    pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+        let token = self.advance_token()
+            .ok_or(ParserError::NoTokenFound { expected: "Identifier".to_string() })?;
         let name = match &token.kind {
             TokenKind::Identifier(ident) => ident.clone(),
-            _ => panic!("Expected identifier at start of statement, got {:?}", token),
+            _ => return Err(ParserError::UnexpectedToken {
+                expected: "Identifier".to_string(),
+                found: token.kind.clone(),
+                line: token.line,
+            }),
         };
 
-        let token = self.advance_token().expect("Expected '=' after identifier");
+        let token = self.advance_token()
+            .ok_or(ParserError::NoTokenFound { expected: "=".to_string() })?;
         match &token.kind {
             TokenKind::Assign => {},
-            _ => panic!("Expected '=' token after identifier, got {:?}", token),
+            _ => return Err(ParserError::UnexpectedToken {
+                expected: "=".to_string(),
+                found: token.kind.clone(),
+                line: token.line,
+            }),
         }
 
-        let value = self.parse_expression();
-        Statement { name, value }
+        let value = self.parse_expression()?;
+
+        let token = self.advance_token()
+            .ok_or(ParserError::NoTokenFound { expected: ";".to_string() })?;
+        match &token.kind {
+            TokenKind::Semicolon => {},
+            _ => return Err(ParserError::UnexpectedToken {
+                expected: ";".to_string(),
+                found: token.kind.clone(),
+                line: token.line,
+            }),
+        }
+
+        Ok(Statement { name, value })
     }
 
-    pub fn parse_expression(&mut self) -> Expression {
+    pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
         self.parse_expression_bp(0)
     }
 
-    fn parse_expression_bp(&mut self, min_bp: u8) -> Expression {
+    fn parse_expression_bp(&mut self, min_bp: u8) -> Result<Expression, ParserError> {
         let mut lhs = match self.peek_token() {
             Some(token) => match &token.kind {
                 TokenKind::Number(value) => {
@@ -117,43 +158,58 @@ impl Parser {
                 
                 TokenKind::LeftParen => {
                     self.advance_token();
-                    let expr = self.parse_expression_bp(0);
-                    let next = self.advance_token().expect("Expected ')' after expression");
+                    let expr = self.parse_expression_bp(0)?;
+                    let next = self.advance_token()
+                        .ok_or(ParserError::NoTokenFound { expected: ")".to_string() })?;
                     match next.kind {
                         TokenKind::RightParen => expr,
-                        _ => panic!("Expected ')' after expression, got {:?}", next),
+                        _ => return Err(ParserError::UnexpectedToken {
+                            expected: ")".to_string(),
+                            found: next.kind.clone(),
+                            line: next.line,
+                        }),
                     }
                 }
                 
                 TokenKind::Lambda => {
                     self.advance_token();
-                    let param_token = self.advance_token().expect("Expected identifier after lambda");
+                    let param_token = self.advance_token()
+                        .ok_or(ParserError::NoTokenFound { expected: "Identifier".to_string() })?;
                     let param = match &param_token.kind {
                         TokenKind::Identifier(value) => value.clone(),
-                        _ => panic!("Expected identifier after lambda token, got {:?}", param_token),
+                        _ => return Err(ParserError::UnexpectedToken {
+                            expected: "Identifier".to_string(),
+                            found: param_token.kind.clone(),
+                            line: param_token.line,
+                        }),
                     };
                     
-                    let dot_token = self.advance_token().expect("Expected '.' after lambda parameter");
+                    let dot_token = self.advance_token()
+                        .ok_or(ParserError::NoTokenFound { expected: ".".to_string() })?;
                     match dot_token.kind {
                         TokenKind::Dot => {},
-                        _ => panic!("Expected '.' after lambda parameter, got {:?}", dot_token),
+                        _ => return Err(ParserError::UnexpectedToken {
+                            expected: ".".to_string(),
+                            found: dot_token.kind.clone(),
+                            line: dot_token.line,
+                        }),
                     }
-                    let body = self.parse_expression_bp(51);
-                    Expression::Abstraction { name: param, body: Box::new(body) }
+                    let body = self.parse_expression_bp(51)?;
+                    Expression::Function { name: param, body: Box::new(body) }
                 }
                 
                 TokenKind::Sub => {
                     self.advance_token();
                     let right_bp = 50;
-                    let rhs = self.parse_expression_bp(right_bp);
+                    let rhs = self.parse_expression_bp(right_bp)?;
                     Expression::UnaryOperation {
                         operator: UnaryOperator::Sub,
                         operand: Box::new(rhs),
                     }
                 }
-                _ => panic!("Unexpected token in prefix position: {:?}", token),
+                _ => return Err(ParserError::UnexpectedPrefix { kind: token.kind.clone(), line: token.line }),
             },
-            None => panic!("Expected expression, found EOF"),
+            None => return Err(ParserError::UnexpectedEOF { expected: "Expression".to_string() }),
         };
 
         
@@ -192,7 +248,7 @@ impl Parser {
             }
 
             if op_kind == Some("application") {
-                let rhs = self.parse_expression_bp(rbp);
+                let rhs = self.parse_expression_bp(rbp)?;
                 lhs = Expression::Application {
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
@@ -210,7 +266,7 @@ impl Parser {
                 _ => unreachable!(),
             };
 
-            let rhs = self.parse_expression_bp(rbp);
+            let rhs = self.parse_expression_bp(rbp)?;
             lhs = Expression::BinaryOperation {
                 lhs: Box::new(lhs),
                 operator,
@@ -218,7 +274,7 @@ impl Parser {
             };
         }
 
-        lhs
+        Ok(lhs)
     }
 }
 
@@ -242,8 +298,8 @@ fn visualize_expression(expr: &Expression, indent: usize) -> String {
         Expression::Number { value } => {
             output.push_str(&format!("{}Number: {}\n", indent_str, value));
         }
-        Expression::Abstraction { name, body } => {
-            output.push_str(&format!("{}Abstraction (param: {})\n", indent_str, name));
+        Expression::Function { name, body } => {
+            output.push_str(&format!("{}Function (param: {})\n", indent_str, name));
             output.push_str(&visualize_expression(body, indent + 1));
         }
         Expression::Application { lhs, rhs } => {

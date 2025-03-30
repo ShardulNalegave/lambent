@@ -1,21 +1,64 @@
-use parser::visualize_program;
 
 pub mod token;
 pub mod lexer;
 pub mod parser;
 pub mod runner;
 
+// ===== Imports =====
+#[macro_use] extern crate thiserror;
+use std::{fs, path::PathBuf};
+use clap::Parser as ClapParser;
+
+use crate::{
+    lexer::Lexer,
+    parser::{Parser, visualize_program},
+    runner::Runner,
+};
+// ===================
+
+#[derive(ClapParser, Debug, Clone)]
+#[command(version)]
+pub struct Args {
+    /// Input file
+    file: PathBuf,
+    /// Show AST generated from source code
+    #[arg(short, long, default_value_t=false)]
+    ast: bool,
+}
+
 fn main() {
-    let code = "result = L a.(a+1) 5";
+    let args = Args::parse();
+    let code = fs::read_to_string(&args.file).expect("Could not read file");
 
-    let mut l = lexer::Lexer::new(code.to_string());
-    let tokens = l.scan_all_tokens();
-    let mut p = parser::Parser::new(tokens);
-    let prog = p.parse_program();
-    println!("{}", visualize_program(&prog));
+    let tokens = match Lexer::new(code).scan_all_tokens() {
+        Ok(tokens) => tokens,
+        Err(e) => {
+            eprintln!("{}", e.to_string());
+            return;
+        },
+    };
 
-    let mut r = runner::Runner::new(prog);
-    r.run();
+    let program = match Parser::new(tokens).parse_program() {
+        Ok(program) => program,
+        Err(e) => {
+            eprintln!("{}", e.to_string());
+            return;
+        },
+    };
 
-    println!("{:?}", r.globals);
+    if args.ast {
+        let visualisation = visualize_program(&program);
+        println!("{}", visualisation);
+    }
+
+    let mut runner = Runner::new(program);
+    match runner.run() {
+        Ok(_) => {},
+        Err(e) => {
+            eprint!("{}", e.to_string());
+            return;
+        },
+    }
+
+    println!("{:?}", runner.globals.get("result").unwrap());
 }

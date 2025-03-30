@@ -1,10 +1,18 @@
 
+// ===== Imports =====
 use crate::token::{Token, TokenKind};
+// ===================
+
+#[derive(Error, Debug, Clone)]
+pub enum LexerError {
+    #[error("Unexpected character '{character}' on line {line}")]
+    UnexpectedCharacter { character: char, line: usize },
+}
 
 pub struct Lexer {
     pos: usize,
     source: String,
-    line: u32,
+    line: usize,
 }
 
 impl Lexer {
@@ -12,10 +20,10 @@ impl Lexer {
         Self { source, line: 1, pos: 0 }
     }
 
-    pub fn scan_all_tokens(&mut self) -> Vec<Token> {
+    pub fn scan_all_tokens(&mut self) -> Result<Vec<Token>, LexerError> {
         let mut tokens = vec![];
         loop {
-            let tok = self.scan_token();
+            let tok = self.scan_token()?;
             if tok.kind == TokenKind::EOF {
                 tokens.push(tok);
                 break;
@@ -23,22 +31,23 @@ impl Lexer {
 
             tokens.push(tok);
         }
-        tokens
+        Ok(tokens)
     }
     
-    pub fn scan_token(&mut self) -> Token {
+    pub fn scan_token(&mut self) -> Result<Token, LexerError> {
         self.skip_whitespace();
 
+        // Early return for identifiers, keywords and numbers
         if let Some(c) = self.peek() {
             if c.is_alphabetic() {
-                return self.read_identifier_or_keyword();
+                return Ok(self.read_identifier_or_keyword());
             } else if c.is_digit(10) {
-                return self.read_number();
+                return Ok(self.read_number());
             }
         }
 
         let c= self.advance();
-        self.make_token(match c {
+        Ok(self.make_token(match c {
             None => TokenKind::EOF,
             Some('(') => TokenKind::LeftParen,
             Some(')') => TokenKind::RightParen,
@@ -49,9 +58,10 @@ impl Lexer {
             Some('/') => TokenKind::Div,
             Some('^') => TokenKind::Expo,
             Some('=') => TokenKind::Assign,
+            Some(';') => TokenKind::Semicolon,
 
-            Some(c) => panic!("Unexpected character: {}", c),
-        })
+            Some(c) => return Err(LexerError::UnexpectedCharacter { character: c, line: self.line }),
+        }))
     }
 
     fn make_token(&self, kind: TokenKind) -> Token {

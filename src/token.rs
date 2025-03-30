@@ -5,6 +5,8 @@ pub enum TokenKind {
     LeftParen,
     RightParen,
     Dot,
+    Assign,
+    Semicolon,
     Identifier(String),
     Number(f32),
     Add,
@@ -12,12 +14,11 @@ pub enum TokenKind {
     Mul,
     Div,
     Expo,
-    Assign,
     Lambda,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
-    pub line: u32,
+    pub line: usize,
 }
