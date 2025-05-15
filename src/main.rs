@@ -3,6 +3,7 @@ pub mod token;
 pub mod lexer;
 pub mod parser;
 pub mod runner;
+pub mod builtins;
 
 // ===== Imports =====
 #[macro_use] extern crate thiserror;
