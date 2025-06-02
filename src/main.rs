@@ -3,7 +3,6 @@ pub mod token;
 pub mod lexer;
 pub mod parser;
 pub mod runner;
-pub mod builtins;
 
 // ===== Imports =====
 #[macro_use] extern crate thiserror;
@@ -17,6 +16,8 @@ use crate::{
 };
 // ===================
 
+const BUILTINS: &str = include_str!("builtins.lambent");
+
 #[derive(ClapParser, Debug, Clone)]
 #[command(version)]
 pub struct Args {
@@ -29,7 +30,7 @@ pub struct Args {
 
 fn main() {
     let args = Args::parse();
-    let code = fs::read_to_string(&args.file).expect("Could not read file");
+    let code = BUILTINS.to_string() + fs::read_to_string(&args.file).expect("Could not read file").as_str();
 
     let tokens = match Lexer::new(code).scan_all_tokens() {
         Ok(tokens) => tokens,

@@ -35,8 +35,7 @@ impl Lexer {
     }
     
     pub fn scan_token(&mut self) -> Result<Token, LexerError> {
-        self.skip_whitespace();
-        self.skip_comment();
+        self.skip_comments_and_whitespace();
 
         // Early return for identifiers, keywords and numbers
         if let Some(c) = self.peek() {
@@ -79,28 +78,50 @@ impl Lexer {
         self.source.chars().nth(self.pos)
     }
 
-    fn skip_whitespace(&mut self) {
-        loop {
-            match self.peek() {
-                Some(' ' | '\r' | '\t') => {
-                    self.advance();
-                },
-                Some('\n') => {
-                    self.advance();
-                    self.line += 1;
-                },
-                _ => break,
+    fn skip_comments_and_whitespace(&mut self) {
+        while let Some(c) = self.peek() {
+            if Self::is_whitespace(c) {
+                self.skip_whitespace();
+            } else if Self::is_comment(c) {
+                self.skip_comment();
+            } else {
+                break;
             }
         }
     }
 
-    fn skip_comment(&mut self) {
-        if let Some('#') = self.peek() {
-            while let Some(c) = self.peek() {
-                self.advance();
-                if c == '\n' {
-                    self.line += 1;
+    fn is_whitespace(c: char) -> bool {
+        matches!(c, ' ' | '\r' | '\t' | '\n')
+    }
+
+    fn skip_whitespace(&mut self) {
+        loop {
+            if let Some(c) = self.peek() {
+                if Lexer::is_whitespace(c) {
+                    self.advance();
+                    if c == '\n' {
+                        self.line += 1;
+                    }
+                } else {
                     break;
+                }
+            }
+        }
+    }
+
+    fn is_comment(c: char) -> bool {
+        c == '#'
+    }
+
+    fn skip_comment(&mut self) {
+        if let Some(c) = self.peek() {
+            if Lexer::is_comment(c) {
+                while let Some(c) = self.peek() {
+                    self.advance();
+                    if c == '\n' {
+                        self.line += 1;
+                        break;
+                    }
                 }
             }
         }

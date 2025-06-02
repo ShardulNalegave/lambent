@@ -1,9 +1,11 @@
 
-true = L x. L y. x;
-false = L x. L y. y;
+true = L x. (L y. x);
+false = L x. (L y. y);
 
-and = L a. L b. a b false;
-or = L a. L b. a true b;
-not = L a. a false true;
+and = L a. (L b. (a b false));
+or = L a. (L b. (a true b));
+not = L a. (a false true);
 
-if = L cond. L then. L else. cond then else;
+if = L cond. (L then. (L else. (cond then else)));
+
+Y = L f. ((L x. (f (x x))) (L x. (f (x x))))

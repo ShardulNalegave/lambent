@@ -1,4 +1,4 @@
 
 # Simple function that divides two numbers
 div = L a. L b. (a/b);
-result = div 1 2;
+result = if false (div 1 2) (15);
