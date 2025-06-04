@@ -47,7 +47,7 @@ impl Lexer {
         }
 
         let c= self.advance();
-        Ok(self.make_token(match c {
+        let tok = match c {
             None => TokenKind::EOF,
             Some('(') => TokenKind::LeftParen,
             Some(')') => TokenKind::RightParen,
@@ -57,11 +57,40 @@ impl Lexer {
             Some('*') => TokenKind::Mul,
             Some('/') => TokenKind::Div,
             Some('^') => TokenKind::Expo,
-            Some('=') => TokenKind::Assign,
             Some(';') => TokenKind::Semicolon,
 
+            Some('!') => if let Some('=') = self.peek() {
+                self.advance();
+                TokenKind::NotEqual
+            } else {
+                return Err(LexerError::UnexpectedCharacter { character: '!', line: self.line })
+            },
+
+            Some('=') => if let Some('=') = self.peek() {
+                self.advance();
+                TokenKind::Equal
+            } else {
+                TokenKind::Assign
+            },
+
+            Some('<') => if let Some('=') = self.peek() {
+                self.advance();
+                TokenKind::LessThanOrEqual
+            } else {
+                TokenKind::LessThan
+            },
+
+            Some('>') => if let Some('=') = self.peek() {
+                self.advance();
+                TokenKind::GreaterThanOrEqual
+            } else {
+                TokenKind::GreaterThan
+            },
+
             Some(c) => return Err(LexerError::UnexpectedCharacter { character: c, line: self.line }),
-        }))
+        };
+
+        Ok(self.make_token(tok))
     }
 
     fn make_token(&self, kind: TokenKind) -> Token {

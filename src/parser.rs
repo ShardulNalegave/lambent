@@ -31,6 +31,13 @@ pub enum BinaryOperator {
     Mul,
     Div,
     Expo,
+
+    Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
 }
 
 #[derive(Clone, Debug)]
@@ -220,7 +227,19 @@ impl Parser {
             };
 
             let (lbp, rbp, op_kind) = {
-                if let TokenKind::Add = op.kind {
+                if let TokenKind::Equal = op.kind {
+                    (5,  6, Some("binary"))
+                } else if let TokenKind::NotEqual = op.kind {
+                    (5,  6, Some("binary"))
+                } else if let TokenKind::LessThan = op.kind {
+                    (5,  6, Some("binary"))
+                } else if let TokenKind::LessThanOrEqual = op.kind {
+                    (5,  6, Some("binary"))
+                } else if let TokenKind::GreaterThan = op.kind {
+                    (5,  6, Some("binary"))
+                } else if let TokenKind::GreaterThanOrEqual = op.kind {
+                    (5,  6, Some("binary"))
+                } else if let TokenKind::Add = op.kind {
                     (10, 11, Some("binary"))
                 } else if let TokenKind::Sub = op.kind {
                     (10, 11, Some("binary"))
@@ -258,6 +277,13 @@ impl Parser {
 
             let op_token = self.advance_token().unwrap();
             let operator = match op_token.kind {
+                TokenKind::Equal => BinaryOperator::Equal,
+                TokenKind::NotEqual => BinaryOperator::NotEqual,
+                TokenKind::LessThan => BinaryOperator::LessThan,
+                TokenKind::LessThanOrEqual => BinaryOperator::LessThanOrEqual,
+                TokenKind::GreaterThan => BinaryOperator::GreaterThan,
+                TokenKind::GreaterThanOrEqual => BinaryOperator::GreaterThanOrEqual,
+
                 TokenKind::Add => BinaryOperator::Add,
                 TokenKind::Sub => BinaryOperator::Sub,
                 TokenKind::Mul => BinaryOperator::Mul,

@@ -8,4 +8,4 @@ not = L a. (a false true);
 
 if = L cond. (L then. (L else. (cond then else)));
 
-Y = L f. ((L x. (f (x x))) (L x. (f (x x))))
+Y = L f. ((L x. (f (x x))) (L x. (f (x x))));

@@ -15,6 +15,13 @@ pub enum TokenKind {
     Div,
     Expo,
     Lambda,
+
+    Equal,
+    NotEqual,
+    GreaterThan,
+    LessThan,
+    GreaterThanOrEqual,
+    LessThanOrEqual,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -72,6 +72,12 @@ impl Runner {
             Expression::BinaryOperation { lhs, operator, rhs } => {
                 let left_val = Runner::evaluate_expression(lhs, env)?;
                 let right_val = Runner::evaluate_expression(rhs, env)?;
+
+                let true_func = env.get("true")
+                    .expect("'true' not found, builtins missing");
+                let false_func = env.get("false")
+                    .expect("'false' not found, builtins missing");
+
                 match (left_val, right_val) {
                     (Value::Number(a), Value::Number(b)) => {
                         match operator {
@@ -80,6 +86,13 @@ impl Runner {
                             BinaryOperator::Mul => Value::Number(a * b),
                             BinaryOperator::Div => Value::Number(a / b),
                             BinaryOperator::Expo => Value::Number(a.powf(b)),
+
+                            BinaryOperator::Equal => if a == b { true_func.clone() } else { false_func.clone() },
+                            BinaryOperator::NotEqual => if a != b { true_func.clone() } else { false_func.clone() },
+                            BinaryOperator::LessThan => if a < b { true_func.clone() } else { false_func.clone() },
+                            BinaryOperator::LessThanOrEqual => if a <= b { true_func.clone() } else { false_func.clone() },
+                            BinaryOperator::GreaterThan => if a > b { true_func.clone() } else { false_func.clone() },
+                            BinaryOperator::GreaterThanOrEqual => if a >= b { true_func.clone() } else { false_func.clone() },
                         }
                     },
                     _ => return Err(RunnerError::BinaryOperationOnNonNumbers),
