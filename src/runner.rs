@@ -24,6 +24,10 @@ pub enum Value {
         body: Box<Expression>,
         env: Env,
     },
+    Thunk {
+        expr: Box<Expression>,
+        env: Env,
+    },
 }
 
 impl std::fmt::Debug for Value {
@@ -31,6 +35,7 @@ impl std::fmt::Debug for Value {
         match self {
             Self::Number(val) => write!(f, "{}", val),
             Self::Function { .. } => write!(f, "<Function>"),
+            Self::Thunk { .. } => write!(f, "<Thunk>"),
         }
     }
 }
@@ -58,9 +63,17 @@ impl Runner {
         Ok(match expr {
             Expression::Number { value } => Value::Number(*value),
             Expression::Name { value } => {
-                env.get(value)
+                let v = env.get(value)
                     .cloned()
-                    .ok_or(RunnerError::UndefinedVariable { name: value.clone() })?
+                    .ok_or(RunnerError::UndefinedVariable { name: value.clone() })?;
+
+                match v {
+                    Value::Number(_) | Value::Function { .. } => v,
+                    Value::Thunk { expr: thunk_expr, env: mut thunk_env } => {
+                        let forced = Runner::evaluate_expression(&thunk_expr, &mut thunk_env)?;
+                        forced
+                    }
+                }
             },
             Expression::UnaryOperation { operator, operand } => {
                 let v = Runner::evaluate_expression(operand, env)?;
@@ -106,13 +119,19 @@ impl Runner {
                 }
             },
             Expression::Application { lhs, rhs } => {
-                let func = Runner::evaluate_expression(lhs, env)?;
-                let arg = Runner::evaluate_expression(rhs, env)?;
-                match func {
-                    Value::Function { param, body, env: mut closure_env } => {
-                        closure_env.insert(param, arg);
-                        Runner::evaluate_expression(&body, &mut closure_env)?
-                    },
+                let func_val = Runner::evaluate_expression(lhs, env)?;
+                match func_val {
+                    Value::Function { param, body, mut env } => {
+                        // 2) Instead of eagerly doing `evaluate_expression(rhs, env)`,
+                        //    insert a Thunk so the function body can force it later.
+                        let arg_thunk = Value::Thunk {
+                            expr: Box::new((**rhs).clone()),
+                            env: env.clone(),   // capture the caller's environment
+                        };
+
+                        env.insert(param, arg_thunk);
+                        Runner::evaluate_expression(&body, &mut env)?
+                    }
                     _ => return Err(RunnerError::ApplyNonFunction),
                 }
             },
