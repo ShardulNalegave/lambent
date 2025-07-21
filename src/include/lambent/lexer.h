@@ -5,6 +5,11 @@
 #include "stddef.h"
 #include "lambent/token.h"
 
+typedef enum lambent_lexer_status {
+    LAMBENT_LEXER_OK,
+    LAMBENT_LEXER_UNEXPECTED_CHAR
+} lambent_lexer_status_e;
+
 typedef struct lambent_lexer {
     const char *source;
     size_t pos;
@@ -13,6 +18,6 @@ typedef struct lambent_lexer {
 } lambent_lexer_t;
 
 lambent_lexer_t lambent_lexer_create(const char *source);
-lambent_token_t lambent_lexer_next_token(lambent_lexer_t *lexer);
+lambent_lexer_status_e lambent_lexer_next_token(lambent_lexer_t *lexer, lambent_token_t *token);
 
 #endif
