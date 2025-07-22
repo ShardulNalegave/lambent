@@ -3,7 +3,8 @@ project(lambent LANGUAGES C VERSION 0.1.0)
 
 set(LAMBENT_SOURCES
     "src/main.c"
-    "src/lexer.c")
+    "src/lexer.c"
+    "src/parser.c")
 
 add_executable(lambent ${LAMBENT_SOURCES})
 target_include_directories(lambent

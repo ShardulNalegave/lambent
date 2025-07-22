@@ -11,10 +11,11 @@ typedef enum lambent_token_kind {
     TOKEN_RPAREN,
 
     TOKEN_SEMICOLON,
-    TOKEN_EQUALS,
+    TOKEN_ASSIGN,
     TOKEN_FAT_ARROW,
 
     TOKEN_NUMBER,
+    TOKEN_STRING,
     TOKEN_IDENTIFIER,
     TOKEN_COMMAND,
 

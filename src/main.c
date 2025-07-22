@@ -5,7 +5,7 @@
 int main() {
     char *source =
         "let result = div 5 2; // Comment\n"
-        "#print result;";
+        "#print \"Result = \" result;";
 
     lambent_lexer_t lex = lambent_lexer_create(source);
     lambent_token_t tok;

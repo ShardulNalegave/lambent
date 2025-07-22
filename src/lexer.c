@@ -26,11 +26,16 @@ static inline char advance(lambent_lexer_t *lexer) {
     return c;
 }
 
-static inline lambent_token_t make_token(lambent_lexer_t *lexer, lambent_token_kind_e kind, char *literal, size_t col) {
+static inline lambent_token_t make_token(
+    lambent_token_kind_e kind,
+    char *literal,
+    size_t line,
+    size_t col
+) {
     lambent_token_t tok;
     tok.kind = kind;
     tok.literal = literal;
-    tok.line = lexer->line;
+    tok.line = line;
     tok.column = col;
     return tok;
 }
@@ -59,7 +64,7 @@ static lambent_token_t read_number(lambent_lexer_t *lexer) {
     int len = lexer->pos - start;
     char *literal = strndup(lexer->source + start, len);
 
-    return make_token(lexer, TOKEN_NUMBER, literal, start_column);
+    return make_token(TOKEN_NUMBER, literal, lexer->line, start_column);
 }
 
 static lambent_token_t read_identifier(lambent_lexer_t *lexer) {
@@ -74,10 +79,10 @@ static lambent_token_t read_identifier(lambent_lexer_t *lexer) {
     char *literal = strndup(lexer->source + start, len);
 
     if (strcmp(literal, "let") == 0) {
-        return make_token(lexer, TOKEN_LET, literal, start_column);
+        return make_token(TOKEN_LET, literal, lexer->line, start_column);
     }
 
-    return make_token(lexer, TOKEN_IDENTIFIER, literal, start_column);
+    return make_token(TOKEN_IDENTIFIER, literal, lexer->line, start_column);
 }
 
 static lambent_token_t read_command(lambent_lexer_t *lexer) {
@@ -91,7 +96,34 @@ static lambent_token_t read_command(lambent_lexer_t *lexer) {
     int len = lexer->pos - start;
     char *literal = strndup(lexer->source + start, len);
 
-    return make_token(lexer, TOKEN_COMMAND, literal, start_column);
+    return make_token(TOKEN_COMMAND, literal, lexer->line, start_column);
+}
+
+static lambent_lexer_status_e read_string(lambent_lexer_t *lexer, lambent_token_t *token) {
+    size_t start_column = lexer->column; // no need to include the start quote
+    size_t start_line = lexer->line;
+    size_t start = lexer->pos;
+
+    while (peek(lexer) != '"') {
+        if (peek(lexer) == '\0') {
+            printf("[LEXER ERROR] Unterminated string\n\tLine: %lu, Column: %lu", start_line, start_column);
+            return LAMBENT_LEXER_UNTERMINATED_STRING;
+        }
+
+        advance(lexer);
+    }
+
+    int len = lexer->pos - start;
+    char *literal = strndup(lexer->source + start, len);
+
+    // TODO: Handle escape sequences in the literal
+
+    advance(lexer); // discard the terminating quote
+
+    *token = make_token(TOKEN_NUMBER, literal, start_line, start_column);
+    token->line = start_line;
+
+    return LAMBENT_LEXER_OK;
 }
 
 lambent_lexer_t lambent_lexer_create(const char *source) {
@@ -107,7 +139,7 @@ lambent_lexer_status_e lambent_lexer_next_token(lambent_lexer_t *lexer, lambent_
     skip_whitespace(lexer);
     
     if (peek(lexer) == '\0') {
-        *token = make_token(lexer, TOKEN_EOF, NULL, lexer->column);
+        *token = make_token(TOKEN_EOF, NULL, lexer->line, lexer->column);
         return LAMBENT_LEXER_OK;
     }
 
@@ -115,17 +147,17 @@ lambent_lexer_status_e lambent_lexer_next_token(lambent_lexer_t *lexer, lambent_
     char c = advance(lexer);
 
     if (c == '(') {
-        *token =  make_token(lexer, TOKEN_LPAREN, "(", start_column);
+        *token =  make_token(TOKEN_LPAREN, "(", lexer->line, start_column);
     } else if (c == ')') {
-        *token = make_token(lexer, TOKEN_RPAREN, ")", start_column);
+        *token = make_token(TOKEN_RPAREN, ")", lexer->line, start_column);
     } else if (c == ';') {
-        *token = make_token(lexer, TOKEN_SEMICOLON, ";", start_column);
+        *token = make_token(TOKEN_SEMICOLON, ";", lexer->line, start_column);
     } else if (c == '=') {
         if (peek(lexer) == '>') {
             advance(lexer);
-            *token = make_token(lexer, TOKEN_FAT_ARROW, "=>", start_column);
+            *token = make_token(TOKEN_FAT_ARROW, "=>", lexer->line, start_column);
         }
-        else *token = make_token(lexer, TOKEN_EQUALS, "=", start_column);
+        else *token = make_token(TOKEN_ASSIGN, "=", lexer->line, start_column);
     } else if (c == '/') {
         if (peek(lexer) == '/') {
             skip_comment(lexer);
@@ -134,6 +166,8 @@ lambent_lexer_status_e lambent_lexer_next_token(lambent_lexer_t *lexer, lambent_
             unexpected_character_error('\0', c, lexer->line, start_column);
             return LAMBENT_LEXER_UNEXPECTED_CHAR;
         }
+    } else if (c == '"') {
+        return read_string(lexer, token);
     } else if (c == '#') {
         *token = read_command(lexer);
     } else if (isdigit(c)) {

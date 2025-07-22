@@ -7,7 +7,8 @@
 
 typedef enum lambent_lexer_status {
     LAMBENT_LEXER_OK,
-    LAMBENT_LEXER_UNEXPECTED_CHAR
+    LAMBENT_LEXER_UNEXPECTED_CHAR,
+    LAMBENT_LEXER_UNTERMINATED_STRING,
 } lambent_lexer_status_e;
 
 typedef struct lambent_lexer {
