@@ -56,14 +56,11 @@ typedef struct lambent_statement {
 
         struct {
             char *name;
-            char num_args; // char == uint8_t
-            struct {
-                bool is_str;
-                union {
-                    char *str;
-                    lambent_expression_t *expr;
-                };
-            } *args;
+            bool str_arg;
+            union {
+                char *str;
+                lambent_expression_t *expr;
+            } arg;
         } command;
     };
 } lambent_statement_t;
@@ -71,7 +68,7 @@ typedef struct lambent_statement {
 typedef struct lambent_program {
     size_t count;
     size_t capacity;
-    lambent_statement_t *statements;
+    lambent_statement_t **statements;
 } lambent_program_t;
 
 typedef struct lambent_parser {
@@ -81,6 +78,6 @@ typedef struct lambent_parser {
 } lambent_parser_t;
 
 lambent_parser_t lambent_parser_create(lambent_lexer_t *lexer);
-lambent_program_t lambent_parser_parse_program();
+lambent_program_t* lambent_parser_parse_program(lambent_parser_t *parser);
 
 #endif
