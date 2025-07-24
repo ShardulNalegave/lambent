@@ -80,4 +80,6 @@ typedef struct lambent_parser {
 lambent_parser_t lambent_parser_create(lambent_lexer_t *lexer);
 lambent_program_t* lambent_parser_parse_program(lambent_parser_t *parser);
 
+void lambent_parser_print_program(const lambent_program_t *program);
+
 #endif

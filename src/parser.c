@@ -83,7 +83,7 @@ static lambent_expression_t* parse_atom(lambent_parser_t *parser) {
 
         default: {
             // TODO: Improve error reporting here
-            printf("Unexpected token\n");
+            printf("Unexpected token (Kind = %d)\n", parser->current_tok.kind);
             return NULL;
         }
     }
@@ -113,6 +113,8 @@ static lambent_statement_t* parse_expr_statement(lambent_parser_t *parser) {
         return NULL;
     }
 
+    advance(parser); // ignore semicolon
+
     lambent_statement_t *stmt = malloc(sizeof(lambent_statement_t));
     stmt->kind = STMT_EXPR;
     stmt->expr.expr = expr;
@@ -135,12 +137,16 @@ static lambent_statement_t* parse_let_statement(lambent_parser_t *parser) {
         return NULL;
     }
 
+    advance(parser); // ignore assign token
+
     lambent_expression_t *value = parse_expression(parser);
 
     if (parser->current_tok.kind != TOKEN_SEMICOLON) {
         // TODO: Throw unexpected token error
         return NULL;
     }
+
+    advance(parser); // ignore semicolon
 
     lambent_statement_t *stmt = malloc(sizeof(lambent_statement_t));
     stmt->kind = STMT_LET;
@@ -170,6 +176,8 @@ static lambent_statement_t* parse_command_statement(lambent_parser_t *parser) {
         // TODO: Throw unexpected token error
         return NULL;
     }
+
+    advance(parser); // ignore semicolon
 
     return stmt;
 }
@@ -207,4 +215,68 @@ lambent_program_t* lambent_parser_parse_program(lambent_parser_t *parser) {
     }
     
     return program;
+}
+
+static inline void indent(size_t level) {
+    for (size_t i = 0; i < level; i++) putchar(' ');
+}
+
+static void print_expression(const lambent_expression_t *expr, size_t level) {
+    indent(level);
+    switch (expr->kind) {
+        case EXPR_VARIABLE:
+            printf("Variable(%s)\n", expr->variable.name);
+            break;
+
+        case EXPR_NUMERAL:
+            printf("Numeral(%d)\n", expr->numeral.value);
+            break;
+
+        case EXPR_FUNCTION:
+            printf("Function(param=%s)\n", expr->function.param);
+            print_expression(expr->function.body, level + 2);
+            break;
+
+        case EXPR_APPLICATION:
+            printf("Application\n");
+            indent(level + 2); printf("Func:\n");
+            print_expression(expr->application.func, level + 4);
+            indent(level + 2); printf("Arg:\n");
+            print_expression(expr->application.arg, level + 4);
+            break;
+    }
+}
+
+static void print_statement(const lambent_statement_t *stmt, size_t level) {
+    indent(level);
+    switch (stmt->kind) {
+        case STMT_EXPR:
+            printf("StmtExpr\n");
+            print_expression(stmt->expr.expr, level + 2);
+            break;
+
+        case STMT_LET:
+            printf("StmtLet(name=%s)\n", stmt->let.name);
+            print_expression(stmt->let.value, level + 2);
+            break;
+
+        case STMT_COMMAND:
+            if (stmt->command.str_arg) {
+                printf("StmtCommand(name=%s, str=\"%s\")\n",
+                    stmt->command.name,
+                    stmt->command.arg.str);
+            } else {
+                printf("StmtCommand(name=%s, expr)\n", stmt->command.name);
+                print_expression(stmt->command.arg.expr, level + 2);
+            }
+            break;
+    }
+}
+
+void lambent_parser_print_program(const lambent_program_t *program) {
+    printf("Program(statements=%zu)\n", program->count);
+    for (size_t i = 0; i < program->count; i++) {
+        printf(" [%zu]\n", i);
+        print_statement(program->statements[i], 2);
+    }
 }
