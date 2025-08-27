@@ -4,21 +4,16 @@
 
 #include "stddef.h"
 #include "lambent/token.h"
+#include "lambent/status.h"
 
-typedef enum lambent_lexer_status {
-    LAMBENT_LEXER_OK,
-    LAMBENT_LEXER_UNEXPECTED_CHAR,
-    LAMBENT_LEXER_UNTERMINATED_STRING,
-} lambent_lexer_status_e;
-
-typedef struct lambent_lexer {
+typedef struct lexer {
     const char *source;
     size_t pos;
     size_t line;
     size_t column;
-} lambent_lexer_t;
+} lexer_t;
 
-lambent_lexer_t lambent_lexer_create(const char *source);
-lambent_lexer_status_e lambent_lexer_next_token(lambent_lexer_t *lexer, lambent_token_t *token);
+lexer_t lexer_create(const char *source);
+lambent_status_e lexer_next_token(lexer_t *lexer, token_t *token);
 
 #endif

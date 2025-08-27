@@ -9,11 +9,11 @@ int main() {
         "let result = div 5 2; // Comment\n"
         "#print result;\n";
 
-    lambent_lexer_t lex = lambent_lexer_create(source);
-    lambent_parser_t parser = lambent_parser_create(&lex);
+    lexer_t lex = lexer_create(source);
+    parser_t parser = parser_create(&lex);
     
-    lambent_program_t *program = lambent_parser_parse_program(&parser);
-    lambent_parser_print_program(program);
+    program_t *program = parser_parse_program(&parser);
+    parser_print_program(program);
 
     return 0;
 }

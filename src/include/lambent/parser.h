@@ -3,24 +3,26 @@
 #define LAMBENT_PARSER_H
 
 #include "lambent/lexer.h"
+#include "lambent/status.h"
+
 #include "stddef.h"
 #include "stdbool.h"
 
-typedef enum lambent_statement_kind {
+typedef enum statement_kind {
     STMT_EXPR = 0,
     STMT_LET,
     STMT_COMMAND
-} lambent_statement_kind_e;
+} statement_kind_e;
 
-typedef enum lambent_expression_kind {
+typedef enum expression_kind {
     EXPR_VARIABLE = 0,
     EXPR_FUNCTION,
     EXPR_APPLICATION,
     EXPR_NUMERAL
-} lambent_expression_kind_e;
+} expression_kind_e;
 
-typedef struct lambent_expression {
-    lambent_expression_kind_e kind;
+typedef struct expression {
+    expression_kind_e kind;
     union {
         struct {
             char *name;
@@ -28,30 +30,30 @@ typedef struct lambent_expression {
 
         struct {
             char *param;
-            struct lambent_expression *body;
+            struct expression *body;
         } function;
 
         struct {
-            struct lambent_expression *func;
-            struct lambent_expression *arg;
+            struct expression *func;
+            struct expression *arg;
         } application;
 
         struct {
             int value;
         } numeral;
     };
-} lambent_expression_t;
+} expression_t;
 
-typedef struct lambent_statement {
-    lambent_statement_kind_e kind;
+typedef struct statement {
+    statement_kind_e kind;
     union {
         struct {
-            lambent_expression_t *expr;
+            expression_t *expr;
         } expr;
 
         struct {
             char *name;
-            lambent_expression_t *value;
+            expression_t *value;
         } let;
 
         struct {
@@ -59,27 +61,27 @@ typedef struct lambent_statement {
             bool str_arg;
             union {
                 char *str;
-                lambent_expression_t *expr;
+                expression_t *expr;
             } arg;
         } command;
     };
-} lambent_statement_t;
+} statement_t;
 
-typedef struct lambent_program {
+typedef struct program {
     size_t count;
     size_t capacity;
-    lambent_statement_t **statements;
-} lambent_program_t;
+    statement_t **statements;
+} program_t;
 
-typedef struct lambent_parser {
-    lambent_lexer_t *lexer;
-    lambent_token_t current_tok;
-    lambent_program_t program;
-} lambent_parser_t;
+typedef struct parser {
+    lexer_t *lexer;
+    token_t current_tok;
+    program_t program;
+} parser_t;
 
-lambent_parser_t lambent_parser_create(lambent_lexer_t *lexer);
-lambent_program_t* lambent_parser_parse_program(lambent_parser_t *parser);
+parser_t parser_create(lexer_t *lexer);
+program_t* parser_parse_program(parser_t *parser);
 
-void lambent_parser_print_program(const lambent_program_t *program);
+void parser_print_program(const program_t *program);
 
 #endif

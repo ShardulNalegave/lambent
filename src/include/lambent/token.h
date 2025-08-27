@@ -4,7 +4,7 @@
 
 #include "stddef.h"
 
-typedef enum lambent_token_kind {
+typedef enum token_kind {
     TOKEN_EOF = 0,
 
     TOKEN_LPAREN,
@@ -20,13 +20,13 @@ typedef enum lambent_token_kind {
     TOKEN_COMMAND,
 
     TOKEN_LET
-} lambent_token_kind_e;
+} token_kind_e;
 
-typedef struct lambent_token {
-    lambent_token_kind_e kind;
+typedef struct token {
+    token_kind_e kind;
     char *literal;
     size_t line;
     size_t column;
-} lambent_token_t;
+} token_t;
 
 #endif
